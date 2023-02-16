@@ -1,5 +1,7 @@
 use std::{net::SocketAddr, env};
 use axum::{routing::get, Router};
+use regexp_match::presentation::controller::hello_controller::{root};
+
 
 
 #[tokio::main]
@@ -19,10 +21,6 @@ async fn main() {
 
 fn create_app() -> Router {
     Router::new().route("/", get(root))
-}
-
-async fn root() -> &'static str {
-    "Hello, World!"
 }
 
 #[cfg(test)]
