@@ -4,21 +4,10 @@ use axum::{response::IntoResponse, Json};
 use hyper::StatusCode;
 
 use crate::domain::entity::user::User;
+use crate::infrastructure::user_repository::find_all_users;
 
 pub async fn all_users() -> impl IntoResponse {
-	let users = vec![
-		User {
-			id: 1,
-			name: "test".to_string(),
-			email: "test@example.com".to_string(),
-		},
-		User {
-			id: 2,
-			name: "test2".to_string(),
-			email: "test2@example.com".to_string(),
-		},
-	];
-
+	let users = find_all_users();
 	(StatusCode::OK, Json(users))
 }
 
@@ -45,16 +34,6 @@ use super::*;
 		assert_eq!(
 			users,
 			vec![
-				User {
-					id: 1,
-					name: "test".to_string(),
-					email: "test@example.com".to_string(),
-				},
-				User {
-					id: 2,
-					name: "test2".to_string(),
-					email: "test2@example.com".to_string(),
-				},
 			]
 		)
 	}
