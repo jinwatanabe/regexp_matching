@@ -3,12 +3,12 @@ use std::vec;
 use axum::{response::IntoResponse, Json};
 use hyper::StatusCode;
 
-use crate::{domain::{entity::user::User, repository::user_repository::UserRepository}, infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}};
+use crate::{domain::{entity::user::User, repository::user_repository::UserRepository}, infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::user_use_case::UserUseCase};
 
 pub async fn all_users() -> impl IntoResponse {
 	let pool = establish_connection();
-	let user_repository = UserRepositoryForDb::new(pool);
-	let users = user_repository.all().await.unwrap();
+	let usecase = UserUseCase::new(UserRepositoryForDb::new(pool));
+	let users = usecase.all().await.unwrap();
 	(StatusCode::OK, Json(users))
 }
 
