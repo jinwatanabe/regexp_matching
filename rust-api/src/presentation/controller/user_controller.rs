@@ -24,6 +24,19 @@ use super::*;
 	use diesel::RunQueryDsl;
 use tower::ServiceExt;
 
+	async fn setup() {
+		let connection = establish_connection();
+		let user = User {
+			id: 1,
+			name: "test".to_string(),
+			email: "test@example.com".to_string(),
+			password: "password".to_string(),
+		};
+		let _ = diesel::insert_into(users::table)
+			.values(&user)
+			.execute(&mut connection.get().unwrap());
+	}
+
 	async fn teardown() {
 		let pool = establish_connection();
 		let result = diesel::delete(users::table).execute(&mut pool.get().unwrap());
@@ -33,7 +46,7 @@ use tower::ServiceExt;
 	#[tokio::test]
 	async fn should_return_users() {
 
-		// setup().await;
+		setup().await;
 
 		let req = Request::builder().uri("/users").body(Body::empty()).unwrap();
 		let res = create_app().oneshot(req).await.unwrap();
@@ -45,6 +58,12 @@ use tower::ServiceExt;
 			assert_eq!(
 				users,
 				vec![
+					User {
+						id: 1,
+						name: "test".to_string(),
+						email: "test@example.com".to_string(),
+						password: "password".to_string(),
+					},
 				]
 			);
 		});
