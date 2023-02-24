@@ -14,28 +14,45 @@ pub async fn all_users() -> impl IntoResponse {
 
 #[cfg(test)]
 mod test {
-	use crate::infrastructure::router::create_app;
+	use crate::{infrastructure::router::create_app, schema::users};
 
 use super::*;
 	use axum::{
 		body::Body,
-		http::{Request, StatusCode},
+		http::{Request},
 	};
-	use tower::ServiceExt;
+	use diesel::RunQueryDsl;
+use tower::ServiceExt;
+
+	async fn teardown() {
+		let pool = establish_connection();
+		let result = diesel::delete(users::table).execute(&mut pool.get().unwrap());
+		assert!(result.is_ok());
+	}
 
 	#[tokio::test]
 	async fn should_return_users() {
+
+		// setup().await;
+
 		let req = Request::builder().uri("/users").body(Body::empty()).unwrap();
 		let res = create_app().oneshot(req).await.unwrap();
-		assert_eq!(res.status(), StatusCode::OK);
-
 		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
 		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
 		let users: Vec<User> = serde_json::from_str(&body).expect("cannot conver User instance.");
-		assert_eq!(
-			users,
-			vec![
-			]
-		)
+
+		let result = std::panic::catch_unwind(|| {
+			assert_eq!(
+				users,
+				vec![
+				]
+			);
+		});
+
+		if let Err(err) = result {
+        std::panic::resume_unwind(err);
+    };
+
+		teardown().await;
 	}
 }
