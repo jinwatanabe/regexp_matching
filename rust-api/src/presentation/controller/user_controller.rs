@@ -70,7 +70,7 @@ use tower::ServiceExt;
 		if let Err(err) = result {
         std::panic::resume_unwind(err);
     };
-		
+
 		teardown().await;
 	}
 
