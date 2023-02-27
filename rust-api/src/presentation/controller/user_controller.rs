@@ -1,9 +1,7 @@
-use std::vec;
-
 use axum::{response::IntoResponse, Json};
 use hyper::StatusCode;
 
-use crate::{domain::{entity::user::User, repository::user_repository::UserRepository}, infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::user_use_case::UserUseCase};
+use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::user_use_case::UserUseCase};
 
 pub async fn all_users() -> impl IntoResponse {
 	let pool = establish_connection();
@@ -14,7 +12,7 @@ pub async fn all_users() -> impl IntoResponse {
 
 #[cfg(test)]
 mod test {
-	use crate::{infrastructure::router::create_app, schema::users};
+	use crate::{infrastructure::router::create_app, schema::users, domain::entity::user::User};
 
 use super::*;
 	use axum::{
@@ -22,6 +20,7 @@ use super::*;
 		http::{Request},
 	};
 	use diesel::RunQueryDsl;
+use hyper::{header::{self}, Method};
 use tower::ServiceExt;
 
 	async fn setup() {
@@ -71,7 +70,41 @@ use tower::ServiceExt;
 		if let Err(err) = result {
         std::panic::resume_unwind(err);
     };
+		
+		teardown().await;
+	}
 
+	#[tokio::test]
+	async fn should_create_user() {
+		let req = Request::builder()
+			.uri("/users")
+			.method(Method::POST)
+			.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+			.body(Body::from(
+				r#"
+				{
+					"name": "test2",
+					"email": "test2@example.com",
+					"password": "password2"
+				}
+				"#,
+			))
+			.unwrap();
+
+
+		let res = create_app().oneshot(req).await.unwrap();
+		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
+		let user: User = serde_json::from_str(&body).expect("cannot conver User instance.");
+		assert_eq!(
+			user,
+			User {
+				id: 2,
+				name: "test2".to_string(),
+				email: "test2@example.com".to_string(),
+				password: "password2".to_string(),
+			}
+		);
 		teardown().await;
 	}
 }
