@@ -1,7 +1,8 @@
 use axum::{response::IntoResponse, Json};
 use hyper::StatusCode;
 
-use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::user_use_case::UserUseCase};
+use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::{user_use_case::UserUseCase, self}, domain::entity::user::{User}};
+use crate::infrastructure::models::user::NewUser;
 
 pub async fn all_users() -> impl IntoResponse {
 	let pool = establish_connection();
@@ -10,9 +11,22 @@ pub async fn all_users() -> impl IntoResponse {
 	(StatusCode::OK, Json(users))
 }
 
+// TODO:idがないとエラーになる
+pub async fn create_user(
+	Json(payload): Json<User>,
+) -> impl IntoResponse {
+	
+	let usecase = UserUseCase::new(UserRepositoryForDb::new(establish_connection()));
+	println!("11111111111111111111");
+	let result = usecase.create(payload).await.unwrap();
+	println!("!!!!!!!!!");
+	print!("{:?}", result);
+	(StatusCode::CREATED, Json(result))
+}
+
 #[cfg(test)]
 mod test {
-	use crate::{infrastructure::router::create_app, schema::users, domain::entity::user::User};
+	use crate::{infrastructure::{router::create_app, models::user::NewUser}, schema::users, domain::entity::user::User};
 
 use super::*;
 	use axum::{
@@ -25,11 +39,10 @@ use tower::ServiceExt;
 
 	async fn setup() {
 		let connection = establish_connection();
-		let user = User {
-			id: 1,
-			name: "test".to_string(),
-			email: "test@example.com".to_string(),
-			password: "password".to_string(),
+		let user = NewUser {
+			name: "test",
+			email: "test@example.com",
+			password: "password",
 		};
 		let _ = diesel::insert_into(users::table)
 			.values(&user)
@@ -37,6 +50,7 @@ use tower::ServiceExt;
 	}
 
 	async fn teardown() {
+		print!("teardown");
 		let pool = establish_connection();
 		let result = diesel::delete(users::table).execute(&mut pool.get().unwrap());
 		assert!(result.is_ok());
@@ -51,14 +65,14 @@ use tower::ServiceExt;
 		let res = create_app().oneshot(req).await.unwrap();
 		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
 		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
-		let users: Vec<User> = serde_json::from_str(&body).expect("cannot conver User instance.");
+		let users: Vec<User> = serde_json::from_str(&body).unwrap();
 
 		let result = std::panic::catch_unwind(|| {
 			assert_eq!(
 				users,
 				vec![
 					User {
-						id: 1,
+						id: users[0].id,
 						name: "test".to_string(),
 						email: "test@example.com".to_string(),
 						password: "password".to_string(),
@@ -67,11 +81,11 @@ use tower::ServiceExt;
 			);
 		});
 
+		teardown().await;
+
 		if let Err(err) = result {
         std::panic::resume_unwind(err);
     };
-
-		teardown().await;
 	}
 
 	#[tokio::test]
@@ -95,7 +109,10 @@ use tower::ServiceExt;
 		let res = create_app().oneshot(req).await.unwrap();
 		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
 		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
-		let user: User = serde_json::from_str(&body).expect("cannot conver User instance.");
+		print!("=====================");
+		print!("{}", body);
+		let user: User = serde_json::from_str(&body).expect("Error parsing json");
+
 		assert_eq!(
 			user,
 			User {

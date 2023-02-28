@@ -1,8 +1,8 @@
 use axum::async_trait;
 
-use crate::domain::entity::user::User;
+use crate::{domain::entity::user::User, infrastructure::models::user::NewUser};
 
-#[async_trait]
 pub trait UserRepository: Clone + std::marker::Send + std::marker::Sync + 'static {
-	async fn all(&self) -> anyhow::Result<Vec<User>>;
+	fn all(&self) -> anyhow::Result<Vec<User>>;
+	fn create(&self, user: NewUser) -> anyhow::Result<User>;
 }

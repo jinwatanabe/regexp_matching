@@ -1,10 +1,14 @@
+use std::sync::Arc;
+
+use crate::domain::repository;
 use crate::presentation::controller::hello_controller::{root};
-use crate::presentation::controller::user_controller::{all_users};
+use crate::presentation::controller::user_controller::{all_users, create_user};
+use axum::extract::Extension;
 use axum::{routing::get, Router};
 
 
 pub fn create_app() -> Router {
     Router::new()
         .route("/", get(root))
-        .route("/users", get(all_users))
+        .route("/users", get(all_users).post(create_user))
 }
