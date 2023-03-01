@@ -1,6 +1,6 @@
 use anyhow::Ok;
 
-use crate::{domain::{repository::user_repository::UserRepository, entity::user::User}, infrastructure::models::user::NewUser};
+use crate::{domain::{repository::user_repository::UserRepository, entity::user::User}, infrastructure::models::user::NewUser, presentation::controller::user_controller::CreateUser};
 
 pub struct UserUseCase<T: UserRepository> {
 		user_repository: T,
@@ -15,7 +15,7 @@ impl<T: UserRepository> UserUseCase<T> {
 				self.user_repository.all()
 		}
 
-		pub async fn create(&self, payload: User) -> anyhow::Result<User> {
+		pub async fn create(&self, payload: CreateUser) -> anyhow::Result<User> {
 
 			let new_user = NewUser{
 				name: &payload.name,

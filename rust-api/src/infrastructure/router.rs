@@ -1,9 +1,5 @@
-use std::sync::Arc;
-
-use crate::domain::repository;
 use crate::presentation::controller::hello_controller::{root};
 use crate::presentation::controller::user_controller::{all_users, create_user};
-use axum::extract::Extension;
 use axum::{routing::get, Router};
 
 

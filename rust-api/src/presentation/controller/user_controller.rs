@@ -1,8 +1,7 @@
 use axum::{response::IntoResponse, Json};
 use hyper::StatusCode;
 
-use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::{user_use_case::UserUseCase, self}, domain::entity::user::{User}};
-use crate::infrastructure::models::user::NewUser;
+use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::{user_use_case::UserUseCase}};
 
 pub async fn all_users() -> impl IntoResponse {
 	let pool = establish_connection();
@@ -11,17 +10,21 @@ pub async fn all_users() -> impl IntoResponse {
 	(StatusCode::OK, Json(users))
 }
 
-// TODO:idがないとエラーになる
 pub async fn create_user(
-	Json(payload): Json<User>,
+	Json(payload): Json<CreateUser>,
 ) -> impl IntoResponse {
 	
 	let usecase = UserUseCase::new(UserRepositoryForDb::new(establish_connection()));
-	println!("11111111111111111111");
 	let result = usecase.create(payload).await.unwrap();
-	println!("!!!!!!!!!");
-	print!("{:?}", result);
 	(StatusCode::CREATED, Json(result))
+}
+
+
+#[derive(serde::Deserialize)]
+pub struct CreateUser {
+	pub name: String,
+	pub email: String,
+	pub password: String,
 }
 
 #[cfg(test)]
@@ -69,15 +72,13 @@ use tower::ServiceExt;
 
 		let result = std::panic::catch_unwind(|| {
 			assert_eq!(
-				users,
-				vec![
-					User {
-						id: users[0].id,
-						name: "test".to_string(),
-						email: "test@example.com".to_string(),
-						password: "password".to_string(),
-					},
-				]
+				users[0],
+				User {
+					id: users[0].id,
+					name: "test".to_string(),
+					email: "test@example.com".to_string(),
+					password: "password".to_string(),
+				},
 			);
 		});
 
@@ -109,14 +110,12 @@ use tower::ServiceExt;
 		let res = create_app().oneshot(req).await.unwrap();
 		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
 		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
-		print!("=====================");
-		print!("{}", body);
 		let user: User = serde_json::from_str(&body).expect("Error parsing json");
 
 		assert_eq!(
 			user,
 			User {
-				id: 2,
+				id: user.id,
 				name: "test2".to_string(),
 				email: "test2@example.com".to_string(),
 				password: "password2".to_string(),

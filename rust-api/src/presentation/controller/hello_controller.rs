@@ -4,6 +4,7 @@ pub async fn root() -> &'static str {
 
 #[cfg(test)]
 mod test {
+    #![allow(unused_imports)]
     use super::*;
     use axum::{
         body::Body,

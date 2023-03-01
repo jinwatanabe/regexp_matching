@@ -1,6 +1,5 @@
-use diesel::{Queryable, Insertable, sql_types::Datetime};
+use diesel::{Queryable};
 use serde::{Serialize, Deserialize};
-use crate::schema::users;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Queryable)]
 pub struct User {

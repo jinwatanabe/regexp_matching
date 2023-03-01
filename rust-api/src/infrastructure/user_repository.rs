@@ -1,5 +1,4 @@
 use anyhow::Ok;
-use axum::async_trait;
 
 use super::{utils::MysqlPool, models::user::NewUser};
 use crate::{domain::{repository::user_repository::UserRepository}};
@@ -33,6 +32,6 @@ fn create(&self, user: NewUser) -> anyhow::Result<User> {
 		assert!(result.is_ok());
 		
 		let user_vec = users.load::<User>(connection).expect("Error loading users");
-		Ok(user_vec[0].clone())
+		Ok(user_vec.last().unwrap().clone())
 	}
 }
