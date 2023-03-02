@@ -1,7 +1,34 @@
-use axum::{response::IntoResponse, Json};
+use axum::{response::IntoResponse, Json, async_trait, extract::{FromRequest, RequestParts}, BoxError, body::HttpBody};
 use hyper::StatusCode;
-
+use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::{user_use_case::UserUseCase}};
+use validator::Validate;
+
+#[async_trait]
+impl<T,B> FromRequest<B> for ValidatedJson<T>
+where
+	T: DeserializeOwned + Validate,
+	B: http_body::Body + Send,
+	B::Data: Send,
+	B::Error: Into<BoxError>,
+{
+	type Rejection = (StatusCode, String);
+
+	async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
+		let Json(value) = Json::<T>::from_request(req).await.map_err(|rejection| {
+			let message = format!("Json parse error: [{}]", rejection);
+			(StatusCode::BAD_REQUEST, message)
+		})?;
+		value.validate().map_err(|rejection| {
+			let message = format!("Validation error: [{}]", rejection);
+			(StatusCode::BAD_REQUEST, message)
+		})?;
+		Ok(ValidatedJson(value))
+	}
+}
+
+#[derive(Debug)]
+pub struct ValidatedJson<T>(T);
 
 pub async fn all_users() -> impl IntoResponse {
 	let pool = establish_connection();
@@ -11,7 +38,7 @@ pub async fn all_users() -> impl IntoResponse {
 }
 
 pub async fn create_user(
-	Json(payload): Json<CreateUser>,
+	ValidatedJson(payload): ValidatedJson<CreateUser>,
 ) -> impl IntoResponse {
 	
 	let usecase = UserUseCase::new(UserRepositoryForDb::new(establish_connection()));
@@ -20,10 +47,13 @@ pub async fn create_user(
 }
 
 
-#[derive(serde::Deserialize)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Validate)]
 pub struct CreateUser {
+	#[validate(length(min = 1, message="名前は1文字以上で入力してください"))]
 	pub name: String,
+	#[validate(email(message="メールアドレスの形式が正しくありません"))]
 	pub email: String,
+	#[validate(length(min = 8, message="パスワードは8文字以上で入力してください"))]
 	pub password: String,
 }
 

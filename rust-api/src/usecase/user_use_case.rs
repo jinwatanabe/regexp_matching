@@ -1,6 +1,7 @@
 use anyhow::Ok;
 
-use crate::{domain::{repository::user_repository::UserRepository, entity::user::User}, infrastructure::models::user::NewUser, presentation::controller::user_controller::CreateUser};
+use crate::{domain::{repository::user_repository::UserRepository, entity::user::User}, infrastructure::models::user::NewUser};
+use crate::presentation::controller::user_controller::CreateUser;
 
 pub struct UserUseCase<T: UserRepository> {
 		user_repository: T,

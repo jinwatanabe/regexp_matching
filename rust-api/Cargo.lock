@@ -696,6 +696,7 @@ dependencies = [
  "diesel",
  "dotenv",
  "futures",
+ "http-body",
  "hyper",
  "mime",
  "serde",
