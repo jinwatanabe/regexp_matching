@@ -1,34 +1,9 @@
-use axum::{response::IntoResponse, Json, async_trait, extract::{FromRequest, RequestParts}, BoxError, body::HttpBody};
+use axum::{response::IntoResponse, Json};
 use hyper::StatusCode;
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use serde::{Serialize, Deserialize};
 use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::{user_use_case::UserUseCase}};
 use validator::Validate;
-
-#[async_trait]
-impl<T,B> FromRequest<B> for ValidatedJson<T>
-where
-	T: DeserializeOwned + Validate,
-	B: http_body::Body + Send,
-	B::Data: Send,
-	B::Error: Into<BoxError>,
-{
-	type Rejection = (StatusCode, String);
-
-	async fn from_request(req: &mut RequestParts<B>) -> Result<Self, Self::Rejection> {
-		let Json(value) = Json::<T>::from_request(req).await.map_err(|rejection| {
-			let message = format!("Json parse error: [{}]", rejection);
-			(StatusCode::BAD_REQUEST, message)
-		})?;
-		value.validate().map_err(|rejection| {
-			let message = format!("Validation error: [{}]", rejection);
-			(StatusCode::BAD_REQUEST, message)
-		})?;
-		Ok(ValidatedJson(value))
-	}
-}
-
-#[derive(Debug)]
-pub struct ValidatedJson<T>(T);
+use crate::presentation::validation::ValidatedJson;
 
 pub async fn all_users() -> impl IntoResponse {
 	let pool = establish_connection();
