@@ -34,7 +34,8 @@ pub struct CreateUser {
 
 #[cfg(test)]
 mod test {
-	use crate::{infrastructure::{router::create_app, models::user::NewUser}, schema::users, domain::entity::user::User};
+
+use crate::{infrastructure::{router::create_app, models::user::NewUser}, schema::users, domain::entity::user::User};
 
 use super::*;
 	use axum::{
@@ -44,6 +45,7 @@ use super::*;
 	use diesel::RunQueryDsl;
 use hyper::{header::{self}, Method};
 use tower::ServiceExt;
+use validator::ValidationError;
 
 	async fn setup() {
 		let connection = establish_connection();
@@ -93,6 +95,34 @@ use tower::ServiceExt;
         std::panic::resume_unwind(err);
     };
 	}
+
+	#[tokio::test]
+	async fn should_validate_create_user() {
+		let req = Request::builder()
+			.uri("/users")
+			.method(Method::POST)
+			.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+			.body(Body::from(
+				r#"
+				{
+					"name": "",
+					"email": "test",
+					"password": ""
+				}
+				"#,
+			))
+			.unwrap();
+
+		let res = create_app().oneshot(req).await.unwrap();
+		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
+
+		assert!(body.contains("名前は1文字以上で入力してください"));
+		assert!(body.contains("メールアドレスの形式が正しくありません"));
+		assert!(body.contains("パスワードは8文字以上で入力してください"));
+
+	}
+
 
 	#[tokio::test]
 	async fn should_create_user() {
