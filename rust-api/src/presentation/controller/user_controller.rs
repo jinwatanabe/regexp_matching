@@ -1,7 +1,7 @@
-use axum::{response::IntoResponse, Json};
+use axum::{response::IntoResponse, Json, extract::Path};
 use hyper::StatusCode;
 use serde::{Serialize, Deserialize};
-use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection}, usecase::{user_use_case::UserUseCase}};
+use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection, models::user::UpdateUser}, usecase::{user_use_case::UserUseCase}, domain::entity::user::User};
 use validator::Validate;
 use crate::presentation::validation::ValidatedJson;
 
@@ -21,6 +21,19 @@ pub async fn create_user(
 	(StatusCode::CREATED, Json(result))
 }
 
+pub async fn update_user(
+	Path(id): Path<i32>,
+	ValidatedJson(payload): ValidatedJson<UpdateUser>,
+) -> impl IntoResponse {
+	let usecase = UserUseCase::new(UserRepositoryForDb::new(establish_connection()));
+	let user = UpdateUser {
+		name: payload.name,
+		email: payload.email,
+		password: payload.password,
+	};
+	let result = usecase.update(id, user).await.unwrap();
+	(StatusCode::OK, Json(result))
+}
 
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Validate)]
 pub struct CreateUser {
@@ -45,7 +58,6 @@ use super::*;
 	use diesel::RunQueryDsl;
 use hyper::{header::{self}, Method};
 use tower::ServiceExt;
-use validator::ValidationError;
 
 	async fn setup() {
 		let connection = establish_connection();
@@ -157,5 +169,38 @@ use validator::ValidationError;
 			}
 		);
 		teardown().await;
+	}
+
+	#[tokio::test]
+
+	async fn should_update_user() {
+		setup().await;
+
+		let req = Request::builder()
+			.uri("/users/")
+			.method(Method::PATCH)
+			.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
+			.body(Body::from(
+				r#"
+				{
+					"name": "update",
+					"email": "update@example.com",
+					"password": "update11111",
+				}"#,
+			)).unwrap();
+
+		let res = create_app().oneshot(req).await.unwrap();
+		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
+		let user: User = serde_json::from_str(&body).expect("Error parsing json");
+
+		assert_eq!(
+			user,
+			User {
+				id: user.id,
+				name: "update".to_string(),
+				email: "update@example.com".to_string(),
+				password: "update11111".to_string(),
+		});
 	}
 }

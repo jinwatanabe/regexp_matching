@@ -1,6 +1,7 @@
 use anyhow::Ok;
+use tracing::log::logger;
 
-use crate::{domain::{repository::user_repository::UserRepository, entity::user::User}, infrastructure::models::user::NewUser};
+use crate::{domain::{repository::user_repository::UserRepository, entity::user::User}, infrastructure::models::user::{NewUser, UpdateUser}};
 use crate::presentation::controller::user_controller::CreateUser;
 
 pub struct UserUseCase<T: UserRepository> {
@@ -25,6 +26,11 @@ impl<T: UserRepository> UserUseCase<T> {
 			};
 
 			let result = self.user_repository.create(new_user);
+			Ok(result.unwrap())
+		}
+
+		pub async fn update(&self, id: i32, payload: UpdateUser) -> anyhow::Result<User> {
+			let result = self.user_repository.update(id, payload);
 			Ok(result.unwrap())
 		}
 }
