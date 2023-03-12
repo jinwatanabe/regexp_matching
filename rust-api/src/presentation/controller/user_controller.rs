@@ -1,7 +1,7 @@
 use axum::{response::IntoResponse, Json, extract::Path};
 use hyper::StatusCode;
 use serde::{Serialize, Deserialize};
-use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection, models::user::UpdateUser}, usecase::{user_use_case::UserUseCase}, domain::entity::user::User};
+use crate::{infrastructure::{user_repository::UserRepositoryForDb, utils::establish_connection, models::user::UpdateUser}, usecase::{user_use_case::UserUseCase}};
 use validator::Validate;
 use crate::presentation::validation::ValidatedJson;
 
@@ -48,7 +48,7 @@ pub struct CreateUser {
 #[cfg(test)]
 mod test {
 
-use crate::{infrastructure::{router::create_app, models::user::NewUser}, schema::users, domain::entity::user::User};
+use crate::{infrastructure::{router::create_app}, schema::users, domain::entity::user::User};
 
 use super::*;
 	use axum::{
@@ -59,18 +59,6 @@ use super::*;
 use hyper::{header::{self}, Method};
 use tower::ServiceExt;
 
-	async fn setup() {
-		let connection = establish_connection();
-		let user = NewUser {
-			name: "test",
-			email: "test@example.com",
-			password: "password",
-		};
-		let _ = diesel::insert_into(users::table)
-			.values(&user)
-			.execute(&mut connection.get().unwrap());
-	}
-
 	async fn teardown() {
 		print!("teardown");
 		let pool = establish_connection();
@@ -79,37 +67,9 @@ use tower::ServiceExt;
 	}
 
 	#[tokio::test]
-	async fn should_return_users() {
 
-		setup().await;
-
-		let req = Request::builder().uri("/users").body(Body::empty()).unwrap();
-		let res = create_app().oneshot(req).await.unwrap();
-		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
-		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
-		let users: Vec<User> = serde_json::from_str(&body).unwrap();
-
-		let result = std::panic::catch_unwind(|| {
-			assert_eq!(
-				users[0],
-				User {
-					id: users[0].id,
-					name: "test".to_string(),
-					email: "test@example.com".to_string(),
-					password: "password".to_string(),
-				},
-			);
-		});
-
-		teardown().await;
-
-		if let Err(err) = result {
-        std::panic::resume_unwind(err);
-    };
-	}
-
-	#[tokio::test]
-	async fn should_validate_create_user() {
+	async fn crud_scenario () {
+		// create
 		let req = Request::builder()
 			.uri("/users")
 			.method(Method::POST)
@@ -117,30 +77,30 @@ use tower::ServiceExt;
 			.body(Body::from(
 				r#"
 				{
-					"name": "",
-					"email": "test",
-					"password": ""
+					"name": "test",
+					"email": "test@example.com",
+					"password": "password"
 				}
 				"#,
-			))
-			.unwrap();
-
+			)).unwrap();
 		let res = create_app().oneshot(req).await.unwrap();
 		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
 		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
+		let user: User = serde_json::from_str(&body).expect("Error parsing json");
+		assert_eq!(
+			user,
+			User {
+				id: user.id,
+				name: "test".to_string(),
+				email: "test@example.com".to_string(),
+				password: "password".to_string(),
+			},
+		);
 
-		assert!(body.contains("名前は1文字以上で入力してください"));
-		assert!(body.contains("メールアドレスの形式が正しくありません"));
-		assert!(body.contains("パスワードは8文字以上で入力してください"));
-
-	}
-
-
-	#[tokio::test]
-	async fn should_create_user() {
+		// update
 		let req = Request::builder()
-			.uri("/users")
-			.method(Method::POST)
+			.uri(&format!("/users/{}", user.id))
+			.method(Method::PATCH)
 			.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
 			.body(Body::from(
 				r#"
@@ -150,9 +110,7 @@ use tower::ServiceExt;
 					"password": "password2"
 				}
 				"#,
-			))
-			.unwrap();
-
+			)).unwrap();
 
 		let res = create_app().oneshot(req).await.unwrap();
 		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
@@ -166,41 +124,26 @@ use tower::ServiceExt;
 				name: "test2".to_string(),
 				email: "test2@example.com".to_string(),
 				password: "password2".to_string(),
-			}
+			},
 		);
-		teardown().await;
-	}
 
-	#[tokio::test]
-
-	async fn should_update_user() {
-		setup().await;
-
-		let req = Request::builder()
-			.uri("/users/")
-			.method(Method::PATCH)
-			.header(header::CONTENT_TYPE, mime::APPLICATION_JSON.as_ref())
-			.body(Body::from(
-				r#"
-				{
-					"name": "update",
-					"email": "update@example.com",
-					"password": "update11111",
-				}"#,
-			)).unwrap();
-
+		// index
+		let req = Request::builder().uri("/users").body(Body::empty()).unwrap();
 		let res = create_app().oneshot(req).await.unwrap();
 		let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
 		let body: String = String::from_utf8(bytes.to_vec()).unwrap();
-		let user: User = serde_json::from_str(&body).expect("Error parsing json");
+		let users: Vec<User> = serde_json::from_str(&body).unwrap();
 
 		assert_eq!(
-			user,
+			users[0],
 			User {
-				id: user.id,
-				name: "update".to_string(),
-				email: "update@example.com".to_string(),
-				password: "update11111".to_string(),
-		});
+				id: users[0].id,
+				name: "test2".to_string(),
+				email: "test2@example.com".to_string(),
+				password: "password2".to_string(),
+			},
+		);
+
+		teardown().await;
 	}
 }

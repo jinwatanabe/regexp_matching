@@ -1,5 +1,4 @@
 use anyhow::Ok;
-use tracing::log::logger;
 
 use crate::{domain::{repository::user_repository::UserRepository, entity::user::User}, infrastructure::models::user::{NewUser, UpdateUser}};
 use crate::presentation::controller::user_controller::CreateUser;
