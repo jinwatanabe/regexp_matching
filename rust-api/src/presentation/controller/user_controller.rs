@@ -55,7 +55,7 @@ use super::*;
 		body::Body,
 		http::{Request},
 	};
-	use diesel::RunQueryDsl;
+	use diesel::{RunQueryDsl, QueryDsl};
 use hyper::{header::{self}, Method};
 use tower::ServiceExt;
 
@@ -143,6 +143,18 @@ use tower::ServiceExt;
 				password: "password2".to_string(),
 			},
 		);
+
+		// delete
+		let req = Request::builder()
+			.uri(&format!("/users/{}", user.id))
+			.method(Method::DELETE)
+			.body(Body::empty())
+			.unwrap();
+		let _ = create_app().oneshot(req).await.unwrap();
+		let pool = establish_connection();
+		let user = users::table.find(user.id).first::<User>(&mut pool.get().unwrap());
+
+		assert!(user.is_err());
 
 		teardown().await;
 	}
