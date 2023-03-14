@@ -4,4 +4,5 @@ pub trait UserRepository: Clone + std::marker::Send + std::marker::Sync + 'stati
 	fn all(&self) -> anyhow::Result<Vec<User>>;
 	fn create(&self, user: NewUser) -> anyhow::Result<User>;
 	fn update(&self, id: i32 ,user: UpdateUser) -> anyhow::Result<User>;
+	fn delete(&self, id: i32) -> anyhow::Result<User>;
 }

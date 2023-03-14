@@ -32,4 +32,9 @@ impl<T: UserRepository> UserUseCase<T> {
 			let result = self.user_repository.update(id, payload);
 			Ok(result.unwrap())
 		}
+
+		pub async fn delete(&self, id: i32) -> anyhow::Result<User> {
+			let result = self.user_repository.delete(id);
+			Ok(result.unwrap())
+		}
 }

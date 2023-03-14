@@ -44,6 +44,14 @@ impl UserRepository for UserRepositoryForDb {
 
 		let user = users.find(user_id).first::<User>(connection).unwrap();
 		Ok(user)
-		
+	}
+
+	fn delete(&self, user_id: i32) -> anyhow::Result<User> {
+		let connection = &mut self.pool.get().unwrap();
+		let user = users.find(user_id).first::<User>(connection).unwrap();
+		let result = diesel::delete(users.find(user_id))
+			.execute(connection);
+		assert!(result.is_ok());
+		Ok(user)
 	}
 }

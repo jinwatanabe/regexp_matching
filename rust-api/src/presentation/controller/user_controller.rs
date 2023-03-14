@@ -35,6 +35,14 @@ pub async fn update_user(
 	(StatusCode::OK, Json(result))
 }
 
+pub async fn delete_user(
+	Path(id): Path<i32>,
+) -> impl IntoResponse {
+	let usecase = UserUseCase::new(UserRepositoryForDb::new(establish_connection()));
+	let result = usecase.delete(id).await.unwrap();
+	(StatusCode::OK, Json(result))
+}
+
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Validate)]
 pub struct CreateUser {
 	#[validate(length(min = 1, message="名前は1文字以上で入力してください"))]
