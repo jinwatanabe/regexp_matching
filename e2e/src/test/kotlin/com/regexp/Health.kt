@@ -2,6 +2,7 @@ package com.regexp
 
 import com.codeborne.selenide.Condition
 import com.codeborne.selenide.Selenide
+import com.codeborne.selenide.Selenide.`$`
 import com.thoughtworks.gauge.Step
 
 class HealthCheck {
@@ -16,8 +17,8 @@ class HealthCheck {
         shouldDisplayLogin()
     }
 
-    @Step("ロゴが表示されている")
+    @Step("HelloWorldが表示されている")
     fun shouldDisplayLogin() {
-        Selenide.`$`(".lnXdpd").shouldBe(Condition.visible)
+        `$`(".hello").shouldBe(Condition.text("Hello World"))
     }
 }
