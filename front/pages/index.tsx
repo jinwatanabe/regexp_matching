@@ -9,8 +9,21 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
+import { User } from "@/types/User";
 
 const inter = Inter({ subsets: ["latin"] });
+const users: User[] = [
+  {
+    id: 1,
+    name: "山田太郎",
+    email: "test1@example.com",
+  },
+  {
+    id: 2,
+    name: "山田花子",
+    email: "test2@example.com",
+  },
+];
 
 export default function Home() {
   return (
@@ -28,11 +41,13 @@ export default function Home() {
               </Tr>
             </Thead>
             <Tbody>
-              <Tr>
-                <Td>1</Td>
-                <Td>山田太郎</Td>
-                <Td>test1@example.com</Td>
-              </Tr>
+              {users.map((user) => (
+                <Tr key={user.id}>
+                  <Td>{user.id}</Td>
+                  <Td>{user.name}</Td>
+                  <Td>{user.email}</Td>
+                </Tr>
+              ))}
             </Tbody>
           </Table>
         </TableContainer>
