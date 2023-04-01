@@ -9,20 +9,20 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { User } from "@/types/User";
+import { Email, Name, User, UserId } from "@/domain/User";
 
 const inter = Inter({ subsets: ["latin"] });
 const users: User[] = [
-  {
-    id: 1,
-    name: "山田太郎",
-    email: "test1@example.com",
-  },
-  {
-    id: 2,
-    name: "山田花子",
-    email: "test2@example.com",
-  },
+  new User(
+    new UserId("1"),
+    new Name("山田太郎"),
+    new Email("test1@example.com")
+  ),
+  new User(
+    new UserId("2"),
+    new Name("山田花子"),
+    new Email("test2@example.com")
+  ),
 ];
 
 export default function Home() {
@@ -42,10 +42,10 @@ export default function Home() {
             </Thead>
             <Tbody>
               {users.map((user) => (
-                <Tr key={user.id}>
-                  <Td>{user.id}</Td>
-                  <Td>{user.name}</Td>
-                  <Td>{user.email}</Td>
+                <Tr key={user.id.value}>
+                  <Td>{user.id.value}</Td>
+                  <Td>{user.name.value}</Td>
+                  <Td>{user.email.value}</Td>
                 </Tr>
               ))}
             </Tbody>
